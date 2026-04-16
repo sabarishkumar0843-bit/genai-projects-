@@ -1,0 +1,6 @@
+{
+  "name": "DKD Performance Tracker",
+  "description": "A comprehensive performance tracking app for DKD (David Kovai Dream's Cricket Club) players, featuring weekly availability polls, scorecard uploads, and team analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

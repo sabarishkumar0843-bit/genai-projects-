@@ -1,0 +1,116 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId (from Auth)
+    // Fields:
+    //   - name: string (required)
+    //   - jerseyNumber: string (required)
+    //   - photoUrl: string (optional)
+    //   - role: string (required, 'player' | 'admin')
+    //
+    // Collection: availability
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - weekNumber: number (1-52)
+    //   - date: string (ISO date)
+    //   - status: string ('IN', 'OUT', 'TENTATIVE')
+    //
+    // Collection: performance
+    // Document ID: auto-generated
+    // Fields:
+    //   - userId: string (required, matches auth.uid)
+    //   - weekNumber: number
+    //   - imageUrl: string
+    //   - timestamp: timestamp
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isDemo(userId) {
+      return userId is string && (userId.matches("^demo-.*") || userId.matches("^user-.*"));
+    }
+    
+    function isOwner(userId) {
+      return (isAuthenticated() && request.auth.uid == userId) || isDemo(userId);
+    }
+
+    function isAdmin() {
+      return (isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "sabarishkumar0843@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['name', 'jerseyNumber', 'role']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.jerseyNumber is string && data.jerseyNumber.size() > 0 && data.jerseyNumber.size() < 10 &&
+             data.role in ['player', 'admin'];
+    }
+
+    function isValidAvailability(data) {
+      return data.keys().hasAll(['userId', 'weekNumber', 'status']) &&
+             isOwner(data.userId) &&
+             data.weekNumber is number && data.weekNumber >= 1 && data.weekNumber <= 52 &&
+             data.status in ['IN', 'OUT', 'TENTATIVE'];
+    }
+
+    function isValidPerformance(data) {
+      return data.keys().hasAll(['userId', 'weekNumber', 'imageUrl']) &&
+             isOwner(data.userId) &&
+             data.imageUrl is string && data.imageUrl.size() > 0;
+    }
+
+    function isValidRating(data) {
+      return data.keys().hasAll(['userId', 'weekNumber', 'rating', 'adminId']) &&
+             data.userId is string &&
+             data.weekNumber is number &&
+             data.rating is number && data.rating >= 1 && data.rating <= 10 &&
+             (data.adminId == request.auth.uid || isDemo(data.adminId));
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isOwner(userId) && isValidUser(request.resource.data, userId);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data, userId);
+    }
+
+    match /availability/{pollId} {
+      allow read: if true;
+      allow create: if isOwner(request.resource.data.userId) && isValidAvailability(request.resource.data);
+      allow update: if isOwner(resource.data.userId) && isValidAvailability(request.resource.data);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    match /performance/{perfId} {
+      allow read: if true;
+      allow create: if isOwner(request.resource.data.userId) && isValidPerformance(request.resource.data);
+      allow update: if isOwner(resource.data.userId) && isValidPerformance(request.resource.data);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
+    match /ratings/{ratingId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidRating(request.resource.data);
+      allow update: if isAdmin() && isValidRating(request.resource.data);
+      allow delete: if isAdmin();
+    }
+  }
+}

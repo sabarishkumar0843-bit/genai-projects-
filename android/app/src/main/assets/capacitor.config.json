@@ -1,0 +1,6 @@
+{
+	"appId": "com.dkdcc.tracker",
+	"appName": "DKD Tracker",
+	"webDir": "dist",
+	"bundledWebRuntime": false
+}

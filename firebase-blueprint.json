@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Player profile and authentication details",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Player's full name" },
+        "jerseyNumber": { "type": "string", "description": "Player's jersey number" },
+        "photoUrl": { "type": "string", "description": "URL to player's photo" },
+        "role": { "type": "string", "enum": ["player", "admin"] }
+      },
+      "required": ["name", "jerseyNumber"]
+    },
+    "Availability": {
+      "title": "Availability",
+      "description": "Weekly availability poll response",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "weekNumber": { "type": "number" },
+        "date": { "type": "string", "format": "date" },
+        "status": { "type": "string", "enum": ["IN", "OUT", "TENTATIVE"] }
+      },
+      "required": ["userId", "weekNumber", "status"]
+    },
+    "Performance": {
+      "title": "Performance",
+      "description": "Scorecard screenshot and metadata",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "weekNumber": { "type": "number" },
+        "imageUrl": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "weekNumber", "imageUrl"]
+    },
+    "Rating": {
+      "title": "Rating",
+      "description": "Weekly player rating given by admin",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "weekNumber": { "type": "number" },
+        "rating": { "type": "number", "description": "Rating from 1 to 10" },
+        "adminId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "weekNumber", "rating", "adminId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profiles" },
+    "/availability/{pollId}": { "schema": "Availability", "description": "Availability records" },
+    "/performance/{perfId}": { "schema": "Performance", "description": "Performance screenshots" },
+    "/ratings/{ratingId}": { "schema": "Rating", "description": "Weekly player ratings" }
+  }
+}
